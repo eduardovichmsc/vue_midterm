@@ -1,5 +1,7 @@
 <script setup>
-import { ref } from "vue";
+import { ref, computed, watch, onMounted } from "vue";
+import { useRouter } from "vue-router";
+import { useStore } from "vuex";
 import { Swiper, SwiperSlide } from "swiper/vue";
 import "swiper/css";
 import Container from "@/components/layout/container.vue";
@@ -11,74 +13,56 @@ defineProps({
   },
 });
 
+const router = useRouter();
+const store = useStore();
+
 const swiperInstance = ref(null);
 const isBeginning = ref(true);
 const isEnd = ref(false);
 
-const onSwiper = (swiper) => {
-  swiperInstance.value = swiper;
+const updateSwiperState = (swiper) => {
+  if (!swiper) return;
   isBeginning.value = swiper.isBeginning;
   isEnd.value = swiper.isEnd;
 };
 
+const onSwiper = (swiper) => {
+  swiperInstance.value = swiper;
+  updateSwiperState(swiper);
+};
+
 const onSlideChange = (swiper) => {
-  isBeginning.value = swiper.isBeginning;
-  isEnd.value = swiper.isEnd;
+  updateSwiperState(swiper);
 };
 
 const slidePrev = () => swiperInstance.value?.slidePrev();
 const slideNext = () => swiperInstance.value?.slideNext();
 
-const books = [
-  {
-    id: 1,
-    author: "Ольга Примаченко",
-    title: "К себе нежно",
-    cover: null,
-    bgColor: "bg-[#F9E5E8]",
-    textColor: "text-rose-900",
-  },
-  {
-    id: 2,
-    author: "Мелоди Битти",
-    title: "Спасать или спасаться",
-    cover: null,
-    bgColor: "bg-[#E11D48]",
-    textColor: "text-white",
-  },
-  {
-    id: 3,
-    author: "Лия Арден",
-    title: "Невеста ноября",
-    cover: null,
-    bgColor: "bg-[#1E293B]",
-    textColor: "text-amber-200",
-  },
-  {
-    id: 4,
-    author: "Мишель Обама",
-    title: "Becoming. Моя история",
-    cover: null,
-    bgColor: "bg-[#FEF3C7]",
-    textColor: "text-amber-950",
-  },
-  {
-    id: 5,
-    author: "Марти Клейн",
-    title: "Сексуальный интеллект",
-    cover: null,
-    bgColor: "bg-[#DBEAFE]",
-    textColor: "text-blue-950",
-  },
-  {
-    id: 6,
-    author: "Джеймс Клир",
-    title: "Атомные привычки",
-    cover: null,
-    bgColor: "bg-[#F3E8FF]",
-    textColor: "text-purple-950",
-  },
-];
+onMounted(() => {
+  if (!store.state.allCatalogBooks.length && !store.state.books.length) {
+    store.dispatch("fetchBooks");
+  }
+});
+
+const books = computed(() => {
+  const all = store.state.allCatalogBooks.length
+    ? store.state.allCatalogBooks
+    : store.state.books;
+  return all.slice(0, 10);
+});
+
+watch(books, () => {
+  setTimeout(() => {
+    if (swiperInstance.value) {
+      swiperInstance.value.update();
+      updateSwiperState(swiperInstance.value);
+    }
+  }, 50);
+});
+
+const openBook = (id) => {
+  router.push(`/book/${id}`);
+};
 </script>
 
 <template>
@@ -103,7 +87,7 @@ const books = [
             <button
               @click="slidePrev"
               :disabled="isBeginning"
-              class="text-gray-600 hover:text-[#0D47A1] disabled:opacity-30 disabled:pointer-events-none transition-all p-1"
+              class="text-gray-600 hover:text-[#0D47A1] disabled:opacity-30 disabled:pointer-events-none transition-all p-1 cursor-pointer"
               aria-label="Предыдущий слайд"
             >
               <img src="@/assets/icons/arrow-left.svg" alt="Предыдущий слайд" />
@@ -112,7 +96,7 @@ const books = [
             <button
               @click="slideNext"
               :disabled="isEnd"
-              class="text-gray-600 hover:text-[#0D47A1] disabled:opacity-30 disabled:pointer-events-none transition-all p-1"
+              class="text-gray-600 hover:text-[#0D47A1] disabled:opacity-30 disabled:pointer-events-none transition-all p-1 cursor-pointer"
               aria-label="Следующий слайд"
             >
               <img src="@/assets/icons/arrow-right.svg" alt="Следующий слайд" />
@@ -121,7 +105,14 @@ const books = [
         </div>
       </div>
 
+      <div v-if="!books.length" class="py-16 flex items-center justify-center">
+        <div
+          class="w-8 h-8 border-3 border-[#0D47A1] border-t-transparent rounded-full animate-spin"
+        ></div>
+      </div>
+
       <Swiper
+        v-else
         @swiper="onSwiper"
         @slideChange="onSlideChange"
         :spaceBetween="25"
@@ -136,7 +127,7 @@ const books = [
         <SwiperSlide
           v-for="book in books"
           :key="book.id"
-          @click="$router.push(`/book/${book.id}`)"
+          @click="openBook(book.id)"
           class="group cursor-pointer"
         >
           <div class="flex flex-col">
@@ -150,7 +141,7 @@ const books = [
               <div
                 :class="[
                   'relative z-10 w-full h-full rounded-r-xl rounded-l-sm overflow-hidden shadow-md flex flex-col justify-between p-5',
-                  book.cover ? 'bg-gray-100' : book.bgColor,
+                  book.cover ? 'bg-gray-100' : book.bgColor || 'bg-[#E5E7EB]',
                 ]"
               >
                 <div
@@ -168,14 +159,14 @@ const books = [
                   v-else
                   :class="[
                     'pl-3 flex flex-col h-full justify-between z-10',
-                    book.textColor,
+                    book.textColor || 'text-gray-900',
                   ]"
                 >
                   <span
-                    class="text-xs opacity-75 font-medium tracking-wide uppercase"
+                    class="text-xs opacity-75 font-medium tracking-wide uppercase truncate"
                     >{{ book.author }}</span
                   >
-                  <p class="font-bold text-lg sm:text-xl leading-snug">
+                  <p class="font-bold text-lg sm:text-xl leading-snug line-clamp-3">
                     {{ book.title }}
                   </p>
                   <div class="w-8 h-0.5 bg-current opacity-40"></div>
