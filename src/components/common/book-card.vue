@@ -1,8 +1,10 @@
 <script setup>
-import { ref } from "vue";
+import { computed } from "vue";
 import { useRouter } from "vue-router";
+import { useStore } from "vuex";
 
 const router = useRouter();
+const store = useStore();
 
 const props = defineProps({
   book: {
@@ -11,8 +13,11 @@ const props = defineProps({
   },
 });
 
-// Интерактивная закладка
-const isBookmarked = ref(props.book.bookmarked || false);
+const isBookmarked = computed(() => store.getters.isBookmarked(props.book.id));
+
+const toggleBookmark = () => {
+  store.dispatch("toggleBookmark", props.book.id);
+};
 
 const openBook = () => {
   router.push(`/book/${props.book.id || 1}`);
@@ -118,7 +123,7 @@ const openBook = () => {
 
       <!-- Кнопка "В закладки" -->
       <button
-        @click.stop="isBookmarked = !isBookmarked"
+        @click.stop="toggleBookmark"
         class="p-1 -mr-1 hover:text-[#0D47A1] transition-colors"
         aria-label="Добавить в закладки"
       >

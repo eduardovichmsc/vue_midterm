@@ -1,5 +1,8 @@
 <script setup>
-import { ref } from "vue";
+import { ref, computed } from "vue";
+import { useStore } from "vuex";
+
+const store = useStore();
 
 const props = defineProps({
   book: {
@@ -9,7 +12,26 @@ const props = defineProps({
 });
 
 const activeImageIndex = ref(0);
-const isBookmarked = ref(false);
+
+// Закладка через Vuex
+const isBookmarked = computed(() => store.getters.isBookmarked(props.book.id));
+const toggleBookmark = () => {
+  store.dispatch("toggleBookmark", props.book.id);
+};
+
+// Статусы чтения (Reading status по ТЗ)
+const readingStatuses = [
+  { id: "planned", label: "В планах" },
+  { id: "reading", label: "Читаю" },
+  { id: "completed", label: "Прочитано" },
+];
+const currentStatus = ref(props.book.readingStatus || null);
+
+const toggleStatus = (id) => {
+  const newStatus = currentStatus.value === id ? null : id;
+  currentStatus.value = newStatus;
+  store.dispatch("setReadingStatus", { bookId: props.book.id, status: newStatus });
+};
 
 const prevImage = () => {
   activeImageIndex.value =
@@ -105,7 +127,7 @@ const nextImage = () => {
 
           <!-- Кнопка закладки в правом верхнем углу обложки -->
           <button
-            @click="isBookmarked = !isBookmarked"
+            @click="toggleBookmark"
             class="absolute top-4 right-4 z-30 w-9 h-9 rounded-full bg-white shadow-md flex items-center justify-center text-gray-600 hover:text-[#0D47A1] transition-transform active:scale-95"
           >
             <svg
@@ -220,64 +242,89 @@ const nextImage = () => {
           </a>
         </div>
 
-        <!-- 3 КНОПКИ ДЕЙСТВИЙ: Читать, Слушать, Саммари -->
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 pt-2">
-          <!-- Читать (Активная залитая кнопка) -->
-          <button
-            class="bg-[#0D47A1] hover:bg-[#0a367a] text-white font-medium text-sm py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors"
-          >
-            <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20">
-              <path
-                d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.255 0-2.443.29-3.5.804V12a1 1 0 11-2 0V4.804z"
-              />
-            </svg>
-            <span>Читать</span>
-          </button>
-
-          <!-- Слушать -->
-          <button
-            class="bg-white hover:bg-blue-50 text-gray-800 hover:text-[#0D47A1] border border-gray-400 hover:border-[#0D47A1] font-medium text-sm py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors"
-          >
-            <svg
-              class="w-4 h-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              stroke-width="2"
+        <!-- 3 КНОПКИ ДЕЙСТВИЙ: Читать, Слушать, Саммари + СТАТУС ЧТЕНИЯ -->
+        <div>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 pt-2">
+            <!-- Читать (Активная залитая кнопка) -->
+            <button
+              class="bg-[#0D47A1] hover:bg-[#0a367a] text-white font-medium text-sm py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors"
             >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M3 18v-6a9 9 0 0118 0v6"
-              />
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M21 19a2 2 0 01-2 2h-1a2 2 0 01-2-2v-3a2 2 0 012-2h3zM3 19a2 2 0 002 2h1a2 2 0 002-2v-3a2 2 0 00-2-2H3z"
-              />
-            </svg>
-            <span>Слушать</span>
-          </button>
+              <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20">
+                <path
+                  d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.255 0-2.443.29-3.5.804V12a1 1 0 11-2 0V4.804z"
+                />
+              </svg>
+              <span>Читать</span>
+            </button>
 
-          <!-- Саммари -->
-          <button
-            class="bg-white hover:bg-blue-50 text-gray-800 hover:text-[#0D47A1] border border-gray-400 hover:border-[#0D47A1] font-medium text-sm py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors"
-          >
-            <svg
-              class="w-4 h-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              stroke-width="2"
+            <!-- Слушать -->
+            <button
+              class="bg-white hover:bg-blue-50 text-gray-800 hover:text-[#0D47A1] border border-gray-400 hover:border-[#0D47A1] font-medium text-sm py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors"
             >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-            <span>Саммари</span>
-          </button>
+              <svg
+                class="w-4 h-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M3 18v-6a9 9 0 0118 0v6"
+                />
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M21 19a2 2 0 01-2 2h-1a2 2 0 01-2-2v-3a2 2 0 012-2h3zM3 19a2 2 0 002 2h1a2 2 0 002-2v-3a2 2 0 00-2-2H3z"
+                />
+              </svg>
+              <span>Слушать</span>
+            </button>
+
+            <!-- Саммари -->
+            <button
+              class="bg-white hover:bg-blue-50 text-gray-800 hover:text-[#0D47A1] border border-gray-400 hover:border-[#0D47A1] font-medium text-sm py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors"
+            >
+              <svg
+                class="w-4 h-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              <span>Саммари</span>
+            </button>
+          </div>
+
+          <!-- СТАТУС ЧТЕНИЯ (Reading status) -->
+          <div
+            class="mt-4 pt-3.5 border-t border-gray-200/80 flex flex-wrap items-center justify-between gap-2.5"
+          >
+            <span class="text-xs text-gray-500 font-medium">Статус чтения:</span>
+            <div class="flex items-center gap-2">
+              <button
+                v-for="status in readingStatuses"
+                :key="status.id"
+                type="button"
+                @click="toggleStatus(status.id)"
+                :class="[
+                  'text-xs font-medium px-3.5 py-1.5 rounded-lg transition-all',
+                  currentStatus === status.id
+                    ? 'bg-[#0D47A1] text-white shadow-sm'
+                    : 'bg-[#EFEFEF] hover:bg-gray-200 text-gray-700',
+                ]"
+              >
+                {{ status.label }}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

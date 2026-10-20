@@ -3,130 +3,37 @@ import BookCard from "@/components/common/book-card.vue";
 import Breadcrumbs from "@/components/common/breadcrumbs.vue";
 import Container from "@/components/layout/container.vue";
 import CatalogFilters from "@/pages/catalog/components/filters.vue";
-import { ref } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
+import { useStore } from "vuex";
 
+const store = useStore();
 const breadcrumbs = [{ label: "Главная", href: "/" }, { label: "Каталог" }];
-
 const currentPage = ref(1);
 
-// Все 12 книг с твоего скрина
-const books = ref([
-  {
-    id: 1,
-    author: "Ольга Примаченко",
-    title: "К себе нежно",
-    rating: 4.6,
-    reviews: 342,
-    bgColor: "bg-[#F9E5E8]",
-    textColor: "text-rose-950",
-  },
-  {
-    id: 2,
-    author: "Ольга Примаченко",
-    title: "С тобой я дома",
-    rating: 4.9,
-    reviews: 385,
-    bgColor: "bg-[#FCE7F3]",
-    textColor: "text-pink-950",
-  },
-  {
-    id: 3,
-    author: "Марк Уолинн",
-    title: "Это началось не с тебя. Как мы наследуем...",
-    rating: 4.3,
-    reviews: 456,
-    bgColor: "bg-[#E0F2FE]",
-    textColor: "text-sky-950",
-  },
-  {
-    id: 4,
-    author: "Джен Синсеро",
-    title: "НИ СЫ. Будь уверен в своих силах и не ...",
-    rating: 4.0,
-    reviews: 786,
-    bgColor: "bg-[#FEF08A]",
-    textColor: "text-yellow-950",
-  },
-  {
-    id: 5,
-    author: "Марк Мэнсон, Уилл Смит",
-    title: "Will. Чему может научить нас простой парень ...",
-    rating: 5.0,
-    reviews: 293,
-    bgColor: "bg-[#FFEDD5]",
-    textColor: "text-orange-950",
-  },
-  {
-    id: 6,
-    author: "Мэттью МакКонахи",
-    title: "Зеленый свет",
-    rating: 4.1,
-    reviews: 120,
-    bgColor: "bg-[#DCFCE7]",
-    textColor: "text-emerald-950",
-  },
-  {
-    id: 7,
-    author: "Фредрик Бакман",
-    title: "Вторая жизнь Уве",
-    rating: 4.0,
-    reviews: 670,
-    bgColor: "bg-[#DBEAFE]",
-    textColor: "text-blue-950",
-  },
-  {
-    id: 8,
-    author: "Айн Рэнд",
-    title: "Атлант расправил плечи",
-    rating: 5.0,
-    reviews: 784,
-    bgColor: "bg-[#F3E8FF]",
-    textColor: "text-purple-950",
-  },
-  {
-    id: 9,
-    author: "Хезер Моррис",
-    title: "Татуировщик из Освенцима",
-    rating: 4.8,
-    reviews: 584,
-    bgColor: "bg-[#E2E8F0]",
-    textColor: "text-slate-900",
-  },
-  {
-    id: 10,
-    author: "Габриэль Гарсиа Маркес",
-    title: "Сто лет одиночества",
-    rating: 4.6,
-    reviews: 394,
-    bgColor: "bg-[#FEF3C7]",
-    textColor: "text-amber-950",
-  },
-  {
-    id: 11,
-    author: "Джон П. Стрелеки",
-    title: "Кафе на краю земли",
-    rating: 4.9,
-    reviews: 349,
-    bgColor: "bg-[#CCFBF1]",
-    textColor: "text-teal-950",
-  },
-  {
-    id: 12,
-    author: "Лола А. Экерстрем",
-    title: "Lagom. Секрет шведского благополучия",
-    rating: 4.7,
-    reviews: 473,
-    bgColor: "bg-[#F1F5F9]",
-    textColor: "text-slate-800",
-  },
-]);
+const books = computed(() => store.getters.allBooks);
+const loading = computed(() => store.getters.isLoading);
+const error = computed(() => store.getters.error);
+
+onMounted(() => {
+  store.dispatch("fetchBooks");
+});
+
+// Watcher по техническому требованию ТЗ
+watch(
+  () => store.state.searchQuery,
+  () => {
+    store.dispatch("fetchBooks");
+  }
+);
 
 const handleApplyFilters = (filters) => {
-  console.log("Применены фильтры:", filters);
+  store.commit("SET_FILTERS", filters);
+  store.dispatch("fetchBooks");
 };
 
 const handleResetFilters = () => {
-  console.log("Фильтры сброшены");
+  store.commit("SET_FILTERS", { genres: [], authors: [], rating: 0 });
+  store.dispatch("fetchBooks");
 };
 </script>
 
@@ -150,12 +57,51 @@ const handleResetFilters = () => {
 
         <!-- ПРАВАЯ КОЛОНКА: Все книги (9 колонок на ПК) -->
         <div class="col-span-2 lg:col-span-9">
-          <h1 class="text-xl sm:text-2xl font-bold text-black mb-6">
-            Все книги
-          </h1>
+          <div class="flex items-center justify-between mb-6">
+            <h1 class="text-xl sm:text-2xl font-bold text-black">
+              Все книги
+            </h1>
+            <span v-if="!loading" class="text-xs sm:text-sm text-gray-400">
+              Найдено: {{ books.length }}
+            </span>
+          </div>
+
+          <!-- Состояние загрузки (Loading state по ТЗ) -->
+          <div
+            v-if="loading"
+            class="py-16 flex flex-col items-center justify-center gap-3 text-gray-400"
+          >
+            <div
+              class="w-8 h-8 border-3 border-[#0D47A1] border-t-transparent rounded-full animate-spin"
+            ></div>
+            <span class="text-xs sm:text-sm">Загрузка каталога...</span>
+          </div>
+
+          <!-- Состояние ошибки (Error state по ТЗ) -->
+          <div
+            v-else-if="error"
+            class="py-12 px-6 bg-red-50 border border-red-200 rounded-2xl text-center flex flex-col items-center gap-3"
+          >
+            <p class="text-sm text-red-600 font-medium">{{ error }}</p>
+            <button
+              @click="store.dispatch('fetchBooks')"
+              class="bg-[#0D47A1] text-white text-xs px-4 py-2 rounded-xl hover:bg-[#0a367a] transition-colors"
+            >
+              Попробовать снова
+            </button>
+          </div>
+
+          <!-- Пустой результат -->
+          <div
+            v-else-if="books.length === 0"
+            class="py-16 text-center text-gray-400 text-sm"
+          >
+            По выбранным фильтрам ничего не найдено. Попробуйте сбросить фильтры.
+          </div>
 
           <!-- Сетка карточек книг: 2 в ряд на мобилке, 3 в ряд на ПК -->
           <div
+            v-else
             class="grid grid-cols-2 sm:grid-cols-3 gap-x-[25px] gap-y-8 lg:gap-x-[30px] lg:gap-y-10"
           >
             <BookCard v-for="book in books" :key="book.id" :book="book" />

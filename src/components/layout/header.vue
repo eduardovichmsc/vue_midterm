@@ -1,10 +1,20 @@
 <script setup>
-import { ref } from "vue";
-import { useRoute } from "vue-router";
+import { ref, computed } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { useStore } from "vuex";
 import Container from "./container.vue";
 
 const route = useRoute();
+const router = useRouter();
+const store = useStore();
+
 const searchQuery = ref("");
+const isAuthModalOpen = ref(false);
+const loginForm = ref({ name: "", email: "" });
+
+const user = computed(() => store.getters.currentUser);
+const isAuthenticated = computed(() => store.getters.isAuthenticated);
+const favoritesCount = computed(() => store.state.favorites.length);
 
 const navLinks = [
   { name: "Главная", to: "/" },
@@ -15,7 +25,30 @@ const navLinks = [
 ];
 
 const handleSearch = () => {
-  console.log("Ищем:", searchQuery.value);
+  store.commit("SET_SEARCH_QUERY", searchQuery.value);
+  if (route.path !== "/catalog") {
+    router.push("/catalog");
+  }
+};
+
+const handleLogin = () => {
+  if (!loginForm.value.name.trim()) return;
+  store.dispatch("login", {
+    name: loginForm.value.name.trim(),
+    email: loginForm.value.email.trim(),
+  });
+  isAuthModalOpen.value = false;
+};
+
+const handleLogout = () => {
+  store.dispatch("logout");
+};
+
+const openFavorites = () => {
+  // Переход в каталог с фильтром избранного
+  if (route.path !== "/catalog") {
+    router.push("/catalog");
+  }
 };
 </script>
 
@@ -126,17 +159,87 @@ const handleSearch = () => {
           class="col-span-2 lg:col-span-2 grid grid-cols-2 lg:flex lg:flex-col gap-[25px] lg:gap-3"
         >
           <button
-            class="w-full bg-[#0D47A1] hover:bg-[#0a367a] text-white font-medium text-sm py-2.5 px-4 rounded-xl transition-colors"
+            v-if="!isAuthenticated"
+            @click="isAuthModalOpen = true"
+            class="w-full bg-[#0D47A1] hover:bg-[#0a367a] text-white font-medium text-sm py-2.5 px-4 rounded-xl transition-colors cursor-pointer"
           >
             Войти
           </button>
           <button
-            class="w-full bg-white hover:bg-blue-50 text-[#0D47A1] border border-[#0D47A1] font-medium text-sm py-2.5 px-4 rounded-xl transition-colors"
+            v-else
+            @click="handleLogout"
+            class="w-full bg-[#0D47A1] hover:bg-[#0a367a] text-white font-medium text-xs sm:text-sm py-2.5 px-3 rounded-xl transition-colors truncate cursor-pointer"
+            :title="'Выйти (' + user.name + ')'"
           >
-            Мои книги
+            {{ user.name }} (Выйти)
+          </button>
+
+          <button
+            @click="openFavorites"
+            class="w-full bg-white hover:bg-blue-50 text-[#0D47A1] border border-[#0D47A1] font-medium text-sm py-2.5 px-4 rounded-xl transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+          >
+            <span>Мои книги</span>
+            <span
+              v-if="favoritesCount > 0"
+              class="w-5 h-5 rounded-full bg-[#0D47A1] text-white text-[10px] font-bold flex items-center justify-center shrink-0"
+            >
+              {{ favoritesCount }}
+            </span>
           </button>
         </div>
       </div>
     </Container>
+
+    <!-- МОДАЛЬНОЕ ОКНО АВТОРИЗАЦИИ (по ТЗ: авторизация вручную + Vuex + LocalStorage) -->
+    <div
+      v-if="isAuthModalOpen"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-xs"
+      @click.self="isAuthModalOpen = false"
+    >
+      <div
+        class="bg-white rounded-3xl p-6 sm:p-8 w-full max-w-sm shadow-2xl flex flex-col gap-5 border border-gray-100"
+      >
+        <div class="flex items-center justify-between">
+          <h3 class="text-xl font-bold text-black">Вход в Читальню</h3>
+          <button
+            @click="isAuthModalOpen = false"
+            class="text-gray-400 hover:text-gray-700 text-lg leading-none cursor-pointer p-1"
+          >
+            ✕
+          </button>
+        </div>
+
+        <form @submit.prevent="handleLogin" class="flex flex-col gap-4">
+          <div>
+            <label class="block text-xs text-gray-500 mb-1.5 font-medium">Ваше имя</label>
+            <input
+              v-model="loginForm.name"
+              type="text"
+              required
+              placeholder="Например, Эдуард"
+              class="w-full bg-[#EFEFEF] rounded-xl p-3 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#0D47A1]/50"
+            />
+          </div>
+
+          <div>
+            <label class="block text-xs text-gray-500 mb-1.5 font-medium">Email</label>
+            <input
+              v-model="loginForm.email"
+              type="email"
+              required
+              placeholder="name@example.com"
+              class="w-full bg-[#EFEFEF] rounded-xl p-3 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#0D47A1]/50"
+            />
+          </div>
+
+          <button
+            type="submit"
+            class="w-full bg-[#0D47A1] hover:bg-[#0a367a] text-white font-medium text-sm py-3 px-4 rounded-xl transition-colors mt-2 cursor-pointer shadow-md"
+          >
+            Войти
+          </button>
+        </form>
+      </div>
+    </div>
   </header>
 </template>
