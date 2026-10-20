@@ -35,6 +35,15 @@ function saveLocalBooks(books) {
   localStorage.setItem(STORAGE_BOOKS_KEY, JSON.stringify(books));
 }
 
+function calcRating(reviews = []) {
+  if (!reviews.length) return { rating: 5, count: 0 };
+  const total = reviews.reduce((sum, r) => sum + (Number(r.rating) || 5), 0);
+  return {
+    rating: Number((total / reviews.length).toFixed(1)),
+    count: reviews.length,
+  };
+}
+
 export const bookService = {
   async getBooks(params = {}) {
     let books = [];
@@ -57,15 +66,12 @@ export const bookService = {
 
     let filtered = [...books];
 
-    if (params.search && params.search.trim()) {
+    if (params.search?.trim()) {
       const q = params.search.toLowerCase().trim();
-      filtered = filtered.filter(
-        (b) =>
-          (b.title && b.title.toLowerCase().includes(q)) ||
-          (b.author && b.author.toLowerCase().includes(q)) ||
-          (b.category && b.category.toLowerCase().includes(q)) ||
-          (b.description && b.description.toLowerCase().includes(q)) ||
-          (Array.isArray(b.tags) && b.tags.some((t) => t.toLowerCase().includes(q)))
+      filtered = filtered.filter((b) =>
+        [b.title, b.author, b.category, b.description, ...(b.tags || [])].some(
+          (val) => typeof val === "string" && val.toLowerCase().includes(q)
+        )
       );
     }
 
@@ -152,25 +158,19 @@ export const bookService = {
 
     if (MOCKAPI_BASE_URL) {
       try {
-        const getRes = await apiClient.get(`/books/${bookId}`);
-        const currentBook = getRes.data;
-        const list = Array.isArray(currentBook.reviewsList)
-          ? [...currentBook.reviewsList]
-          : [];
+        const { data: currentBook } = await apiClient.get(`/books/${bookId}`);
+        const list = Array.isArray(currentBook.reviewsList) ? [...currentBook.reviewsList] : [];
         list.unshift(newReview);
 
-        const totalScore = list.reduce(
-          (sum, r) => sum + (Number(r.rating) || 5),
-          0
-        );
-        calculatedRating = Number((totalScore / list.length).toFixed(1));
-        totalReviewsCount = list.length;
+        const { rating, count } = calcRating(list);
+        calculatedRating = rating;
+        totalReviewsCount = count;
 
         await apiClient.put(`/books/${bookId}`, {
           reviewsList: list,
-          reviewsCount: totalReviewsCount,
-          reviews: totalReviewsCount,
-          rating: calculatedRating,
+          reviewsCount: count,
+          reviews: count,
+          rating,
         });
       } catch (mockApiErr) {
         console.warn("MockAPI update review fallback:", mockApiErr.message);
@@ -182,15 +182,12 @@ export const bookService = {
     if (book) {
       if (!book.reviewsList) book.reviewsList = [];
       book.reviewsList.unshift(newReview);
-      const totalScore = book.reviewsList.reduce(
-        (sum, r) => sum + (Number(r.rating) || 5),
-        0
-      );
-      calculatedRating = Number((totalScore / book.reviewsList.length).toFixed(1));
-      totalReviewsCount = book.reviewsList.length;
-      book.rating = calculatedRating;
-      book.reviews = totalReviewsCount;
-      book.reviewsCount = totalReviewsCount;
+      const { rating, count } = calcRating(book.reviewsList);
+      calculatedRating = rating;
+      totalReviewsCount = count;
+      book.rating = rating;
+      book.reviews = count;
+      book.reviewsCount = count;
       saveLocalBooks(books);
     }
 

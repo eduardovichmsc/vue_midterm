@@ -107,6 +107,21 @@ export default createStore({
     SET_FILTERS(state, filters) {
       state.filters = { ...state.filters, ...filters };
     },
+    ADD_REVIEW(state, { bookId, review, newRating, newReviewsCount }) {
+      if (state.currentBook && String(state.currentBook.id) === String(bookId)) {
+        if (!state.currentBook.reviewsList) state.currentBook.reviewsList = [];
+        state.currentBook.reviewsList.unshift(review);
+      }
+      [state.currentBook, ...state.books]
+        .filter((b) => b && String(b.id) === String(bookId))
+        .forEach((b) => {
+          if (newRating !== undefined) b.rating = newRating;
+          if (newReviewsCount !== undefined) {
+            b.reviewsCount = newReviewsCount;
+            b.reviews = newReviewsCount;
+          }
+        });
+    },
   },
 
   actions: {
@@ -150,7 +165,7 @@ export default createStore({
       }
     },
 
-    async addReview({ commit, state }, { bookId, review }) {
+    async addReview({ commit }, { bookId, review }) {
       try {
         const result = await bookService.addReview(bookId, review);
         const savedReview = {
@@ -160,28 +175,12 @@ export default createStore({
           rating: result.rating,
           text: result.text,
         };
-
-        if (state.currentBook && String(state.currentBook.id) === String(bookId)) {
-          if (!state.currentBook.reviewsList) state.currentBook.reviewsList = [];
-          state.currentBook.reviewsList.unshift(savedReview);
-          if (result.newRating !== undefined) {
-            state.currentBook.rating = result.newRating;
-          }
-          if (result.newReviewsCount !== undefined) {
-            state.currentBook.reviewsCount = result.newReviewsCount;
-            state.currentBook.reviews = result.newReviewsCount;
-          }
-        }
-
-        const inCatalog = state.books.find((b) => String(b.id) === String(bookId));
-        if (inCatalog) {
-          if (result.newRating !== undefined) inCatalog.rating = result.newRating;
-          if (result.newReviewsCount !== undefined) {
-            inCatalog.reviewsCount = result.newReviewsCount;
-            inCatalog.reviews = result.newReviewsCount;
-          }
-        }
-
+        commit("ADD_REVIEW", {
+          bookId,
+          review: savedReview,
+          newRating: result.newRating,
+          newReviewsCount: result.newReviewsCount,
+        });
         return savedReview;
       } catch (err) {
         commit("SET_ERROR", err.message || "Ошибка отправки отзыва");

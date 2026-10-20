@@ -74,11 +74,7 @@ const setPage = (p) => {
 const setTab = (tab) => {
   activeTab.value = tab;
   currentPage.value = 1;
-  if (tab === "favorites") {
-    router.replace({ path: "/catalog", query: { filter: "favorites" } });
-  } else {
-    router.replace({ path: "/catalog" });
-  }
+  router.replace(tab === "favorites" ? { path: "/catalog", query: { filter: "favorites" } } : { path: "/catalog" });
 };
 
 watch(
