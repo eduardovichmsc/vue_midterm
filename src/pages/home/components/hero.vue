@@ -40,7 +40,6 @@ const slides = [
   },
 ];
 
-// Управление Swiper и точками пагинации
 const swiperInstance = ref(null);
 const activeSlide = ref(0);
 
@@ -49,7 +48,6 @@ const onSwiper = (swiper) => {
 };
 
 const onSlideChange = (swiper) => {
-  // realIndex нужен, чтобы точки правильно подсвечивались при бесконечной прокрутке (loop)
   activeSlide.value = swiper.realIndex;
 };
 
@@ -61,7 +59,6 @@ const goToSlide = (index) => {
 <template>
   <section class="w-full mt-2 mb-12">
     <Container>
-      <!-- Внешняя обертка с градиентом и скруглениями (остается на месте, а слайды ездят внутри!) -->
       <div
         class="relative bg-gradient-to-r from-[#BCE0FD] via-[#92B4FA] to-[#6B8DFA] rounded-[32px] overflow-hidden shadow-sm"
       >
@@ -81,11 +78,9 @@ const goToSlide = (index) => {
           class="w-full cursor-grab active:cursor-grabbing"
         >
           <SwiperSlide v-for="slide in slides" :key="slide.id">
-            <!-- Сетка внутри каждого слайда -->
             <div
               class="p-6 pb-14 sm:p-10 sm:pb-16 lg:p-[74px] min-h-[380px] lg:min-h-[440px] grid grid-cols-2 gap-[25px] lg:grid-cols-12 lg:gap-[30px] items-center"
             >
-              <!-- ЛЕВАЯ ЧАСТЬ: 6 колонок на ПК -->
               <div
                 class="col-span-2 lg:col-span-6 z-10 text-left flex flex-col items-start"
               >
@@ -108,7 +103,6 @@ const goToSlide = (index) => {
                 </button>
               </div>
 
-              <!-- ПРАВАЯ ЧАСТЬ: 6 колонок на ПК -->
               <div
                 class="col-span-2 lg:col-span-6 relative z-10 mt-6 lg:mt-0 flex justify-center lg:justify-end items-center"
               >
@@ -119,7 +113,6 @@ const goToSlide = (index) => {
                   class="max-h-[320px] object-contain drop-shadow-xl"
                 />
 
-                <!-- Векторная иллюстрация-заглушка -->
                 <div
                   v-else
                   class="relative w-64 h-56 sm:w-80 sm:h-64 lg:w-96 lg:h-72 flex items-center justify-center"
@@ -162,7 +155,6 @@ const goToSlide = (index) => {
           </SwiperSlide>
         </Swiper>
 
-        <!-- Точки слайдера (связаны со Swiper) -->
         <div
           class="absolute bottom-5 left-1/2 -translate-x-1/2 flex items-center gap-2.5 z-20"
         >

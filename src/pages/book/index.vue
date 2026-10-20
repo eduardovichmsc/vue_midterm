@@ -14,7 +14,6 @@ import BookCard from "@/components/common/book-card.vue";
 const route = useRoute();
 const store = useStore();
 
-// Запасные данные по умолчанию со скрина
 const fallbackBook = {
   id: "11",
   author: "Джон П. Стрелеки",
@@ -77,10 +76,8 @@ const loadBookData = async () => {
 
 onMounted(loadBookData);
 
-// Watcher по техническому требованию ТЗ
 watch(() => route.params.id, loadBookData);
 
-// Динамические хлебные крошки
 const breadcrumbs = computed(() => [
   { label: "Главная", href: "/" },
   { label: "Каталог", href: "/catalog" },
@@ -88,7 +85,6 @@ const breadcrumbs = computed(() => [
   { label: book.value.title },
 ]);
 
-// 5. Книги этого автора для нижней карусели
 const authorBooks = [
   {
     id: 101,
@@ -137,7 +133,6 @@ const authorBooks = [
   },
 ];
 
-// Управление нижней каруселью Swiper
 const authorSwiper = ref(null);
 const onAuthorSwiper = (swiper) => {
   authorSwiper.value = swiper;
@@ -147,10 +142,8 @@ const onAuthorSwiper = (swiper) => {
 <template>
   <div class="w-full pb-12 overflow-hidden">
     <Container>
-      <!-- Хлебные крошки -->
       <Breadcrumbs :items="breadcrumbs" class="mb-2" />
 
-      <!-- Состояние загрузки (Loading state) -->
       <div
         v-if="loading"
         class="py-24 flex flex-col items-center justify-center gap-3 text-gray-400"
@@ -161,7 +154,6 @@ const onAuthorSwiper = (swiper) => {
         <span class="text-sm">Загрузка информации о книге...</span>
       </div>
 
-      <!-- Состояние ошибки (Error state) -->
       <div
         v-else-if="error"
         class="py-16 px-6 bg-red-50 border border-red-200 rounded-3xl text-center flex flex-col items-center gap-4 my-6"
@@ -176,10 +168,8 @@ const onAuthorSwiper = (swiper) => {
       </div>
 
       <template v-else>
-        <!-- Карточка книги с вертикальной галереей -->
         <BookDetailsCard :book="book" />
 
-        <!-- Блок отзывов, характеристик и формы -->
         <BookReviewsSection
           :bookId="book.id"
           :specs="book.specs || fallbackBook.specs"
@@ -187,7 +177,6 @@ const onAuthorSwiper = (swiper) => {
         />
       </template>
 
-      <!-- Нижний слайдер: Книги этого автора -->
       <section class="mt-16">
         <div class="flex items-end justify-between mb-8">
           <h2 class="text-2xl sm:text-3xl font-bold text-black leading-none">
@@ -205,31 +194,17 @@ const onAuthorSwiper = (swiper) => {
             <div class="hidden sm:flex items-center gap-4">
               <button
                 @click="authorSwiper?.slidePrev()"
-                class="text-gray-600 hover:text-[#0D47A1] transition-colors p-1"
+                class="hover:opacity-75 transition-opacity p-1"
+                aria-label="Предыдущий слайд"
               >
-                <svg width="28" height="14" viewBox="0 0 28 14" fill="none">
-                  <path
-                    d="M27 7H1M1 7L7 1M1 7L7 13"
-                    stroke="currentColor"
-                    stroke-width="1.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                </svg>
+                <img src="@/assets/icons/arrow-left.svg" alt="Предыдущий слайд" />
               </button>
               <button
                 @click="authorSwiper?.slideNext()"
-                class="text-gray-600 hover:text-[#0D47A1] transition-colors p-1"
+                class="hover:opacity-75 transition-opacity p-1"
+                aria-label="Следующий слайд"
               >
-                <svg width="28" height="14" viewBox="0 0 28 14" fill="none">
-                  <path
-                    d="M1 7H27M27 7L21 1M27 7L21 13"
-                    stroke="currentColor"
-                    stroke-width="1.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                </svg>
+                <img src="@/assets/icons/arrow-right.svg" alt="Следующий слайд" />
               </button>
             </div>
           </div>

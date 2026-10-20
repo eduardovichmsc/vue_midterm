@@ -1,6 +1,9 @@
 <script setup>
 import { ref, watch } from "vue";
 import { useStore } from "vuex";
+import starBlue from "@/assets/icons/star-blue.svg";
+import starGray from "@/assets/icons/star-gray.svg";
+import starWhite from "@/assets/icons/star-white.svg";
 
 const store = useStore();
 
@@ -31,7 +34,6 @@ watch(
   { deep: true }
 );
 
-// Состояние формы нового отзыва
 const userRating = ref(0);
 const userComment = ref("");
 const isSubmitting = ref(false);
@@ -48,7 +50,6 @@ const submitReview = async () => {
 
   isSubmitting.value = true;
   try {
-    // Операция POST по техническому требованию ТЗ
     const saved = await store.dispatch("addReview", {
       bookId: props.bookId,
       review: reviewPayload,
@@ -68,31 +69,25 @@ const submitReview = async () => {
   <section class="mt-14">
     <h2 class="text-2xl sm:text-3xl font-bold text-black mb-6">Отзывы</h2>
 
-    <!-- Сетка 12 колонок: 8 колонок под список отзывов, 4 колонки под правый сайдбар -->
     <div
       class="grid grid-cols-2 gap-[25px] lg:grid-cols-12 lg:gap-[30px] items-start"
     >
-      <!-- ЛЕВАЯ КОЛОНКА: Карточки отзывов (8 колонок) -->
       <div class="col-span-2 lg:col-span-8 flex flex-col gap-5">
         <div
           v-for="review in reviews"
           :key="review.id"
           class="border border-gray-300 rounded-[24px] p-5 sm:p-6 bg-white flex flex-col sm:flex-row gap-4 items-start"
         >
-          <!-- Аватарка пользователя -->
           <div
-            class="w-12 h-12 rounded-full bg-[#EFEFEF] text-gray-400 flex items-center justify-center shrink-0"
+            class="w-12 h-12 rounded-full bg-[#EFEFEF] flex items-center justify-center shrink-0"
           >
-            <svg class="w-7 h-7 fill-current" viewBox="0 0 20 20">
-              <path
-                fill-rule="evenodd"
-                d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
-                clip-rule="evenodd"
-              />
-            </svg>
+            <img
+              src="@/assets/icons/user.svg"
+              alt="Пользователь"
+              class="w-7 h-7"
+            />
           </div>
 
-          <!-- Контент отзыва -->
           <div class="flex-1 w-full">
             <div
               class="flex flex-wrap items-center justify-between gap-2 mb-2.5"
@@ -104,23 +99,16 @@ const submitReview = async () => {
                 <span class="text-xs text-gray-400">{{ review.date }}</span>
               </div>
 
-              <!-- Плашка со звездами в рамке -->
               <div
                 class="border border-gray-300 rounded-lg px-2.5 py-1 flex items-center gap-1"
               >
-                <svg
+                <img
                   v-for="star in 5"
                   :key="star"
-                  :class="[
-                    'w-3.5 h-3.5 fill-current',
-                    star <= review.rating ? 'text-[#0D47A1]' : 'text-gray-300',
-                  ]"
-                  viewBox="0 0 20 20"
-                >
-                  <path
-                    d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
-                  />
-                </svg>
+                  :src="star <= review.rating ? starBlue : starGray"
+                  alt="Звезда"
+                  class="w-3.5 h-3.5"
+                />
               </div>
             </div>
 
@@ -130,7 +118,6 @@ const submitReview = async () => {
           </div>
         </div>
 
-        <!-- Кнопка "Смотреть больше отзывов" -->
         <div class="text-center mt-2">
           <button
             class="text-xs sm:text-sm text-gray-400 hover:text-[#0D47A1] underline underline-offset-4 transition-colors"
@@ -140,9 +127,7 @@ const submitReview = async () => {
         </div>
       </div>
 
-      <!-- ПРАВАЯ КОЛОНКА: Характеристики книги + Форма отзыва (4 колонки) -->
       <div class="col-span-2 lg:col-span-4 flex flex-col gap-6">
-        <!-- Карточка характеристик с точечным разделителем -->
         <div
           class="bg-[#EFEFEF] rounded-[24px] p-5 sm:p-6 flex flex-col gap-3 text-xs"
         >
@@ -152,7 +137,6 @@ const submitReview = async () => {
             class="flex items-baseline justify-between gap-1"
           >
             <span class="text-gray-500 shrink-0">{{ spec.label }}</span>
-            <!-- Точки между названием и значением -->
             <span
               class="flex-1 border-b border-dotted border-gray-400 mx-1"
             ></span>
@@ -162,7 +146,6 @@ const submitReview = async () => {
           </div>
         </div>
 
-        <!-- Карточка "Оставьте отзыв" -->
         <div class="bg-[#EFEFEF] rounded-[24px] p-6 flex flex-col">
           <h3 class="text-lg sm:text-xl font-bold text-black text-center mb-4">
             Оставьте отзыв
@@ -177,17 +160,11 @@ const submitReview = async () => {
               @click="userRating = star"
               class="focus:outline-none transition-transform hover:scale-110"
             >
-              <svg
-                :class="[
-                  'w-5 h-5 fill-current transition-colors',
-                  star <= userRating ? 'text-[#0D47A1]' : 'text-white',
-                ]"
-                viewBox="0 0 20 20"
-              >
-                <path
-                  d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
-                />
-              </svg>
+              <img
+                :src="star <= userRating ? starBlue : starWhite"
+                alt="Оценка"
+                class="w-5 h-5 transition-transform"
+              />
             </button>
           </div>
 

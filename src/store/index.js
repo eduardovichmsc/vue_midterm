@@ -25,6 +25,7 @@ function getSavedFavorites() {
 export default createStore({
   state: {
     books: [],
+    allCatalogBooks: [],
     currentBook: null,
     loading: false,
     error: null,
@@ -34,15 +35,32 @@ export default createStore({
     filters: {
       genres: [],
       authors: [],
+      languages: [],
       rating: 0,
     },
   },
 
   getters: {
     allBooks: (state) => state.books,
+    allCatalogBooks: (state) => state.allCatalogBooks,
+    allGenres: (state) => {
+      const source = state.allCatalogBooks.length ? state.allCatalogBooks : state.books;
+      const fromBooks = source.map((b) => b.category?.trim()).filter(Boolean);
+      return Array.from(new Set(fromBooks)).sort((a, b) => a.localeCompare(b, "ru"));
+    },
+    allAuthors: (state) => {
+      const source = state.allCatalogBooks.length ? state.allCatalogBooks : state.books;
+      const fromBooks = source.map((b) => b.author?.trim()).filter(Boolean);
+      return Array.from(new Set(fromBooks)).sort((a, b) =>
+        a.localeCompare(b, "ru")
+      );
+    },
     isBookmarked: (state) => (id) => state.favorites.includes(String(id)),
-    favoriteBooks: (state) =>
-      state.books.filter((b) => state.favorites.includes(String(b.id))),
+    favoriteBooks: (state) => {
+      const source = state.allCatalogBooks.length ? state.allCatalogBooks : state.books;
+      const favIds = state.favorites.map(String);
+      return source.filter((b) => favIds.includes(String(b.id)));
+    },
     isAuthenticated: (state) => !!state.user,
     currentUser: (state) => state.user,
     isLoading: (state) => state.loading,
@@ -52,6 +70,9 @@ export default createStore({
   mutations: {
     SET_BOOKS(state, books) {
       state.books = books;
+    },
+    SET_ALL_CATALOG_BOOKS(state, books) {
+      state.allCatalogBooks = books;
     },
     SET_CURRENT_BOOK(state, book) {
       state.currentBook = book;
@@ -93,10 +114,16 @@ export default createStore({
       commit("SET_LOADING", true);
       commit("SET_ERROR", null);
       try {
+        if (!state.allCatalogBooks.length) {
+          const rawAll = await bookService.getBooks({});
+          commit("SET_ALL_CATALOG_BOOKS", rawAll);
+        }
+
         const params = {
           search: state.searchQuery,
           genres: state.filters.genres,
           authors: state.filters.authors,
+          languages: state.filters.languages,
           rating: state.filters.rating,
         };
         const books = await bookService.getBooks(params);
@@ -125,13 +152,37 @@ export default createStore({
 
     async addReview({ commit, state }, { bookId, review }) {
       try {
-        const newReview = await bookService.addReview(bookId, review);
+        const result = await bookService.addReview(bookId, review);
+        const savedReview = {
+          id: result.id,
+          author: result.author,
+          date: result.date,
+          rating: result.rating,
+          text: result.text,
+        };
+
         if (state.currentBook && String(state.currentBook.id) === String(bookId)) {
           if (!state.currentBook.reviewsList) state.currentBook.reviewsList = [];
-          state.currentBook.reviewsList.unshift(newReview);
-          state.currentBook.reviewsCount = (state.currentBook.reviewsCount || 0) + 1;
+          state.currentBook.reviewsList.unshift(savedReview);
+          if (result.newRating !== undefined) {
+            state.currentBook.rating = result.newRating;
+          }
+          if (result.newReviewsCount !== undefined) {
+            state.currentBook.reviewsCount = result.newReviewsCount;
+            state.currentBook.reviews = result.newReviewsCount;
+          }
         }
-        return newReview;
+
+        const inCatalog = state.books.find((b) => String(b.id) === String(bookId));
+        if (inCatalog) {
+          if (result.newRating !== undefined) inCatalog.rating = result.newRating;
+          if (result.newReviewsCount !== undefined) {
+            inCatalog.reviewsCount = result.newReviewsCount;
+            inCatalog.reviews = result.newReviewsCount;
+          }
+        }
+
+        return savedReview;
       } catch (err) {
         commit("SET_ERROR", err.message || "Ошибка отправки отзыва");
         throw err;

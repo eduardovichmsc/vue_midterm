@@ -3,7 +3,6 @@ defineProps({
   items: {
     type: Array,
     required: true,
-    // Пример: [{ label: 'Главная', href: '/' }, { label: 'Каталог' }]
   },
 });
 </script>
